@@ -1,0 +1,41 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Investigation Agent",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.run_agent",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "🧪 Debug Incident Simulation",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.simulate_incident",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "▶ Debug Main",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Debug Hypothesis Agent",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.run_hypothesis",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}
