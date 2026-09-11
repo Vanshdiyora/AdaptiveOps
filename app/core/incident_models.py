@@ -129,4 +129,15 @@ class InvestigationResult(BaseModel):
         default_factory=list
     )
 
+    repository_path: str | None = None
+    code_evidence: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+    code_findings: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+    code_change_suggestions: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+
     status: str = "COMPLETE"

@@ -14,8 +14,8 @@ def build_parser() -> argparse.ArgumentParser:
 	)
 	parser.set_defaults(
 		command="investigation",
-		project_id="demo-commerce",
-		service="order-service",
+		project_id="Investment Research Agent",
+		service="investment-research-agent",
 		minutes=10,
 	)
 	subparsers = parser.add_subparsers(dest="command")
@@ -89,6 +89,34 @@ def print_detection(incident) -> None:
 		print(f"[{reason.severity.value}] {reason.message}")
 
 
+def print_repository_analysis(investigation) -> None:
+	print("\n--- Repository Code Findings ---")
+	print(f"Repository: {investigation.repository_path or 'Not configured'}")
+	if investigation.code_findings:
+		for finding in investigation.code_findings:
+			print(f"\nFile: {finding.get('file', 'Unknown')}")
+			print(f"Line: {finding.get('line', 'Unknown')}")
+			print(f"Symbol: {finding.get('symbol', 'Unknown')}")
+			print(f"Issue: {finding.get('issue', 'Unknown')}")
+			print(f"Evidence: {finding.get('evidence', 'Unknown')}")
+			print(f"Confidence: {finding.get('confidence', 0):.2f}")
+	else:
+		print("- No matching repository code was found")
+
+	print("\n--- Required Code Changes ---")
+	if investigation.code_change_suggestions:
+		for suggestion in investigation.code_change_suggestions:
+			print(f"\nFile: {suggestion.get('file', 'Unknown')}")
+			print(f"Line: {suggestion.get('line', 'Unknown')}")
+			print(f"Symbol: {suggestion.get('symbol', 'Unknown')}")
+			print(f"Problem: {suggestion.get('problem', 'Unknown')}")
+			print(f"Change: {suggestion.get('suggestion', 'Unknown')}")
+			print(f"Reason: {suggestion.get('reason', 'Unknown')}")
+			print(f"Confidence: {suggestion.get('confidence', 0):.2f}")
+	else:
+		print("- No code change suggestions were generated")
+
+
 def print_investigation(investigation) -> None:
 	print("\n" + "=" * 60)
 	print("ADAPTIVEOPS INVESTIGATION")
@@ -132,6 +160,8 @@ def print_investigation(investigation) -> None:
 			print(f"- {uncertainty}")
 	else:
 		print("- None reported")
+
+	print_repository_analysis(investigation)
 
 
 async def main() -> None:

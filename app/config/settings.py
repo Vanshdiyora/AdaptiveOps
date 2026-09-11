@@ -1,9 +1,31 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
 
     app_name: str = "AdaptiveOps"
+
+    repository_path: str | None = None
+    repository_ignored_dirs: list[str] = [
+        ".git",
+        "node_modules",
+        "__pycache__",
+        ".pytest_cache",
+        ".venv",
+        "venv",
+        "dist",
+        "build",
+        ".next",
+        "coverage",
+        "target",
+        "vendor",
+        ".idea",
+        ".vscode",
+    ]
+    repository_max_files: int = 200
+    repository_max_search_results: int = 50
+    repository_max_file_size_kb: int = 256
 
     # mock / azure
     observability_mode: str = "mock"
@@ -19,9 +41,15 @@ class Settings(BaseSettings):
 
     observation_window_minutes: int = 10
 
-    groq_api_key: str | None = None
-    groq_model: str = "qwen/qwen3.6-27b"
-    groq_temperature: float = 0.0
+    maq_api_key: str | None = Field(
+        default=None,
+        validation_alias="MAQ_API_KEY",
+    )
+    maq_base_url: str = "https://llm.maqsoftware.net/v1"
+    maq_model: str = "muse-glimmer-30b"
+    # maq_model: str = "gemma-4-31b"
+
+    maq_temperature: float = 0.0
 
     model_config = SettingsConfigDict(
         env_file=".env",

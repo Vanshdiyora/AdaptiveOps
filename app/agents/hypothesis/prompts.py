@@ -39,12 +39,16 @@ Do not generate commands.
 
 
 HYPOTHESIS_USER_PROMPT = """
-Analyze the following investigation result.
+Analyze the following investigation result, including any runtime evidence,
+repository code evidence, code findings, and code change suggestions.
 
 INVESTIGATION RESULT:
 {investigation}
 
 Generate the competing root-cause hypotheses.
+
+Prefer hypotheses that are supported by concrete evidence, and clearly separate
+confirmed evidence from likely inferences.
 """
 
 
