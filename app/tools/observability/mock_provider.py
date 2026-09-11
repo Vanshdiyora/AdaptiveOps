@@ -16,56 +16,92 @@ class MockApplicationInsightsProvider(
     ObservabilityProvider
 ):
 
-    def _now(self):
+    def _now(self) -> datetime:
         return datetime.now(timezone.utc)
 
     async def get_logs(
         self,
         service: str,
-        minutes: int
+        minutes: int,
     ) -> list[LogEntry]:
 
         now = self._now()
 
         return [
             LogEntry(
-                timestamp=now - timedelta(seconds=45),
+                timestamp=now - timedelta(seconds=60),
                 level="INFO",
-                service=service,
-                operation="CreateOrder",
-                message="Order request received"
+                service="frontend",
+                operation="POST /api/workflow/run",
+                message=(
+                    "Workflow run request received from frontend"
+                ),
+            ),
+
+            LogEntry(
+                timestamp=now - timedelta(seconds=50),
+                level="INFO",
+                service="frontend",
+                operation="POST /api/workflow/run",
+                message=(
+                    "Request URL: "
+                    "http://localhost:5173/api/workflow/run"
+                ),
+            ),
+
+            LogEntry(
+                timestamp=now - timedelta(seconds=40),
+                level="ERROR",
+                service="frontend",
+                operation="POST /api/workflow/run",
+                message=(
+                    '127.0.0.1:50810 - '
+                    '"POST /api/workflow/run HTTP/1.1" '
+                    "404 Not Found"
+                ),
+                exception_type="HTTPNotFound",
             ),
 
             LogEntry(
                 timestamp=now - timedelta(seconds=30),
-                level="WARNING",
-                service=service,
-                operation="CreateOrder",
-                message="Redis connection pool utilization above 80%"
+                level="ERROR",
+                service="frontend",
+                operation="POST /api/workflow/run",
+                message=(
+                    "Workflow API endpoint "
+                    "/api/workflow/run returned 404 Not Found"
+                ),
+                exception_type="HTTPNotFound",
             ),
 
             LogEntry(
-                timestamp=now - timedelta(seconds=15),
+                timestamp=now - timedelta(seconds=20),
                 level="ERROR",
-                service=service,
-                operation="CreateOrder",
-                message="Redis connection timeout"
+                service="frontend",
+                operation="POST /api/workflow/run",
+                message=(
+                    "POST request failed because "
+                    "/api/workflow/run is not registered "
+                    "on the application running at localhost:5173"
+                ),
+                exception_type="HTTPNotFound",
             ),
 
             LogEntry(
                 timestamp=now - timedelta(seconds=10),
-                level="ERROR",
-                service=service,
-                operation="CreateOrder",
-                message="Failed to process order",
-                exception_type="RedisTimeoutException"
+                level="INFO",
+                service="frontend",
+                operation="POST /api/workflow/run",
+                message=(
+                    "Workflow request completed with HTTP status 404"
+                ),
             ),
         ]
 
     async def get_metrics(
         self,
         service: str,
-        minutes: int
+        minutes: int,
     ) -> MetricSnapshot:
 
         now = self._now()
@@ -74,88 +110,123 @@ class MockApplicationInsightsProvider(
             timestamp=now,
             service=service,
 
-            request_count=1250,
-            error_count=185,
+            request_count=120,
+            error_count=10,
 
-            error_rate=14.8,
+            error_rate=8.33,
 
-            latency_p50_ms=620,
-            latency_p95_ms=2450,
+            # Request reaches the application and gets
+            # an HTTP response, so latency is non-zero.
+            latency_p50_ms=18.0,
+            latency_p95_ms=42.0,
 
-            cpu_percent=82.5,
-            memory_percent=91.3,
+            cpu_percent=12.5,
+            memory_percent=34.0,
         )
 
     async def get_traces(
         self,
         service: str,
-        minutes: int
+        minutes: int,
     ) -> list[TraceEntry]:
 
         now = self._now()
 
         return [
             TraceEntry(
-                timestamp=now - timedelta(seconds=20),
-                trace_id="trace-001",
-                span_id="span-001",
-                service=service,
-                operation="CreateOrder",
-                duration_ms=2480,
+                timestamp=now - timedelta(seconds=45),
+                trace_id="trace-workflow-001",
+                span_id="span-frontend-001",
+                service="frontend",
+                operation="POST /api/workflow/run",
+                duration_ms=16,
                 status="ERROR",
                 attributes={
-                    "dependency": "redis",
-                    "error": "connection_timeout"
-                }
+                    "http_method": "POST",
+                    "http_url": (
+                        "http://localhost:5173/api/workflow/run"
+                    ),
+                    "http_status": 404,
+                    "error": "Not Found",
+                    "route": "/api/workflow/run",
+                },
             ),
 
             TraceEntry(
-                timestamp=now - timedelta(seconds=18),
-                trace_id="trace-002",
-                span_id="span-002",
-                service=service,
-                operation="ValidateOrder",
-                duration_ms=125,
-                status="OK",
+                timestamp=now - timedelta(seconds=30),
+                trace_id="trace-workflow-002",
+                span_id="span-frontend-002",
+                service="frontend",
+                operation="POST /api/workflow/run",
+                duration_ms=21,
+                status="ERROR",
+                attributes={
+                    "http_method": "POST",
+                    "target": "localhost:5173",
+                    "path": "/api/workflow/run",
+                    "status_code": 404,
+                    "error_type": "HTTPNotFound",
+                },
             ),
 
             TraceEntry(
-                timestamp=now - timedelta(seconds=12),
-                trace_id="trace-003",
-                span_id="span-003",
-                service=service,
-                operation="CreateOrder",
-                duration_ms=2700,
+                timestamp=now - timedelta(seconds=15),
+                trace_id="trace-workflow-003",
+                span_id="span-frontend-003",
+                service="frontend",
+                operation="POST /api/workflow/run",
+                duration_ms=39,
                 status="ERROR",
                 attributes={
-                    "dependency": "redis",
-                    "error": "connection_timeout"
-                }
+                    "http_method": "POST",
+                    "path": "/api/workflow/run",
+                    "response_status": 404,
+                    "reason": (
+                        "No matching API route was found"
+                    ),
+                },
             ),
         ]
 
     async def get_exceptions(
         self,
         service: str,
-        minutes: int
+        minutes: int,
     ) -> list[ExceptionEntry]:
 
         now = self._now()
 
         return [
             ExceptionEntry(
-                timestamp=now - timedelta(seconds=15),
-                service=service,
-                exception_type="RedisTimeoutException",
-                message="Unable to acquire Redis connection",
-                operation="CreateOrder"
+                timestamp=now - timedelta(seconds=40),
+                service="frontend",
+                exception_type="HTTPNotFound",
+                message=(
+                    "POST /api/workflow/run returned "
+                    "404 Not Found"
+                ),
+                operation="POST /api/workflow/run",
             ),
 
             ExceptionEntry(
-                timestamp=now - timedelta(seconds=8),
-                service=service,
-                exception_type="TimeoutError",
-                message="Redis operation exceeded timeout",
-                operation="CreateOrder"
+                timestamp=now - timedelta(seconds=30),
+                service="frontend",
+                exception_type="HTTPNotFound",
+                message=(
+                    "Workflow API endpoint "
+                    "/api/workflow/run was not found "
+                    "on localhost:5173"
+                ),
+                operation="POST /api/workflow/run",
+            ),
+
+            ExceptionEntry(
+                timestamp=now - timedelta(seconds=15),
+                service="frontend",
+                exception_type="HTTPNotFound",
+                message=(
+                    "No route matched POST /api/workflow/run"
+                ),
+                operation="POST /api/workflow/run",
             ),
         ]

@@ -1,3 +1,22 @@
+Metadata-Version: 2.4
+Name: adaptiveops-agent
+Version: 0.1.0
+Summary: AI-powered AdaptiveOps agent for application observability and automated operations
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: azure-identity>=1.25.3
+Requires-Dist: azure-monitor-query>=2.0.0
+Requires-Dist: fastapi>=0.141.1
+Requires-Dist: httpx>=0.28.1
+Requires-Dist: langchain>=1.4.0
+Requires-Dist: langchain-groq>=1.1.3
+Requires-Dist: langgraph>=1.2.11
+Requires-Dist: pydantic>=2.13.5
+Requires-Dist: pydantic-settings>=2.15.0
+Requires-Dist: python-dotenv>=1.2.3
+Requires-Dist: pytest>=8.3.0
+Requires-Dist: uvicorn>=0.52.4
+
 # AdaptiveOps
 
 **AdaptiveOps** is a project-agnostic Agentic AI platform for investigating application incidents and identifying their likely root cause.
