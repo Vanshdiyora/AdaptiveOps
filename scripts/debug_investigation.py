@@ -58,7 +58,7 @@ async def main() -> None:
     )()
 
     incident = Incident(
-        incident_id="INC-DEMO-001",
+        incident_id="INC-DEMO-001", 
         project_id="Investment Research Agent",
         service="payments",
         severity=IncidentSeverity.HIGH,
