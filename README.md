@@ -69,7 +69,7 @@ Not currently included:
 
 * Python
 * LangChain
-* Groq LLM
+* MAQ AI (OpenAI-compatible) LLM
 * Pydantic
 * FastAPI
 * LangGraph *(planned for orchestration)*

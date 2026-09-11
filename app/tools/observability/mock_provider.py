@@ -32,7 +32,7 @@ class MockApplicationInsightsProvider(
                 timestamp=now - timedelta(seconds=60),
                 level="INFO",
                 service="frontend",
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
                 message=(
                     "Workflow run request received from frontend"
                 ),
@@ -42,10 +42,10 @@ class MockApplicationInsightsProvider(
                 timestamp=now - timedelta(seconds=50),
                 level="INFO",
                 service="frontend",
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
                 message=(
                     "Request URL: "
-                    "http://localhost:5173/api/workflow/run"
+                    "http://localhost:5173/api/workflow/last"
                 ),
             ),
 
@@ -53,10 +53,10 @@ class MockApplicationInsightsProvider(
                 timestamp=now - timedelta(seconds=40),
                 level="ERROR",
                 service="frontend",
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
                 message=(
                     '127.0.0.1:50810 - '
-                    '"POST /api/workflow/run HTTP/1.1" '
+                    '"POST /api/workflow/last HTTP/1.1" '
                     "404 Not Found"
                 ),
                 exception_type="HTTPNotFound",
@@ -66,10 +66,10 @@ class MockApplicationInsightsProvider(
                 timestamp=now - timedelta(seconds=30),
                 level="ERROR",
                 service="frontend",
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
                 message=(
                     "Workflow API endpoint "
-                    "/api/workflow/run returned 404 Not Found"
+                    "/api/workflow/last returned 404 Not Found"
                 ),
                 exception_type="HTTPNotFound",
             ),
@@ -78,10 +78,10 @@ class MockApplicationInsightsProvider(
                 timestamp=now - timedelta(seconds=20),
                 level="ERROR",
                 service="frontend",
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
                 message=(
                     "POST request failed because "
-                    "/api/workflow/run is not registered "
+                    "/api/workflow/last is not registered "
                     "on the application running at localhost:5173"
                 ),
                 exception_type="HTTPNotFound",
@@ -91,7 +91,7 @@ class MockApplicationInsightsProvider(
                 timestamp=now - timedelta(seconds=10),
                 level="INFO",
                 service="frontend",
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
                 message=(
                     "Workflow request completed with HTTP status 404"
                 ),
@@ -138,17 +138,17 @@ class MockApplicationInsightsProvider(
                 trace_id="trace-workflow-001",
                 span_id="span-frontend-001",
                 service="frontend",
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
                 duration_ms=16,
                 status="ERROR",
                 attributes={
                     "http_method": "POST",
                     "http_url": (
-                        "http://localhost:5173/api/workflow/run"
+                        "http://localhost:5173/api/workflow/last"
                     ),
                     "http_status": 404,
                     "error": "Not Found",
-                    "route": "/api/workflow/run",
+                    "route": "/api/workflow/last",
                 },
             ),
 
@@ -157,13 +157,13 @@ class MockApplicationInsightsProvider(
                 trace_id="trace-workflow-002",
                 span_id="span-frontend-002",
                 service="frontend",
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
                 duration_ms=21,
                 status="ERROR",
                 attributes={
                     "http_method": "POST",
                     "target": "localhost:5173",
-                    "path": "/api/workflow/run",
+                    "path": "/api/workflow/last",
                     "status_code": 404,
                     "error_type": "HTTPNotFound",
                 },
@@ -174,12 +174,12 @@ class MockApplicationInsightsProvider(
                 trace_id="trace-workflow-003",
                 span_id="span-frontend-003",
                 service="frontend",
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
                 duration_ms=39,
                 status="ERROR",
                 attributes={
                     "http_method": "POST",
-                    "path": "/api/workflow/run",
+                    "path": "/api/workflow/last",
                     "response_status": 404,
                     "reason": (
                         "No matching API route was found"
@@ -202,10 +202,10 @@ class MockApplicationInsightsProvider(
                 service="frontend",
                 exception_type="HTTPNotFound",
                 message=(
-                    "POST /api/workflow/run returned "
+                    "POST /api/workflow/last returned "
                     "404 Not Found"
                 ),
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
             ),
 
             ExceptionEntry(
@@ -214,10 +214,10 @@ class MockApplicationInsightsProvider(
                 exception_type="HTTPNotFound",
                 message=(
                     "Workflow API endpoint "
-                    "/api/workflow/run was not found "
+                    "/api/workflow/last was not found "
                     "on localhost:5173"
                 ),
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
             ),
 
             ExceptionEntry(
@@ -225,8 +225,8 @@ class MockApplicationInsightsProvider(
                 service="frontend",
                 exception_type="HTTPNotFound",
                 message=(
-                    "No route matched POST /api/workflow/run"
+                    "No route matched POST /api/workflow/last"
                 ),
-                operation="POST /api/workflow/run",
+                operation="POST /api/workflow/last",
             ),
         ]
