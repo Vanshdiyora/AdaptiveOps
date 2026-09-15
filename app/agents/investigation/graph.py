@@ -10,6 +10,7 @@ from app.core.incident_models import (
     IncidentStatus,
     InvestigationResult,
 )
+from app.tools.repository.investigator import investigate_repository
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ def build_investigation_graph(
             "error": None,
         }
 
-    def collect_repository_evidence(
+    async def collect_repository_evidence(
         state: InvestigationState,
     ) -> dict:
 
@@ -40,6 +41,24 @@ def build_investigation_graph(
                 state["incident"]
             )
         )
+        observation = state["incident"].observation
+        exceptions = observation.get("exceptions", []) if isinstance(observation, dict) else observation.exceptions
+        traces = observation.get("traces", []) if isinstance(observation, dict) else observation.traces
+        logs = observation.get("logs", []) if isinstance(observation, dict) else observation.logs
+        structured_repository_result = None
+        if exceptions:
+            structured_repository_result = await investigate_repository(
+                exceptions[0],
+                traces=traces,
+                logs=logs,
+            )
+            logger.info(
+                "[LLMContext] Repository investigation selected: primary=%s related_files=%s caller_files=%s callee_files=%s",
+                _location_label(structured_repository_result.primary_location),
+                _location_files(structured_repository_result.related_locations),
+                _location_files(structured_repository_result.callers),
+                _location_files(structured_repository_result.callees),
+            )
 
         return {
             "repository_path": settings.repository_path,
@@ -60,11 +79,47 @@ def build_investigation_graph(
                     [],
                 )
             ),
+
+            "repository_investigation": (
+                structured_repository_result.model_dump(mode="json")
+                if structured_repository_result
+                else None
+            ),
         }
 
     def prepare_investigation_context(
         state: InvestigationState,
     ) -> dict:
+
+        structured_context = state.get("repository_investigation") or {}
+        context_files = {
+            item.get("file_path")
+            for key in ("primary_location", "related_locations", "callers", "callees")
+            for item in _as_location_list(structured_context.get(key))
+            if item.get("file_path")
+        }
+        context_files.update(
+            item.get("file")
+            for item in state.get("code_evidence", [])
+            if item.get("file")
+        )
+        context_symbols = {
+            item.get("symbol_name") or item.get("symbol")
+            for key in ("primary_location", "related_locations", "callers", "callees")
+            for item in _as_location_list(structured_context.get(key))
+            if item.get("symbol_name") or item.get("symbol")
+        }
+        context_symbols.update(
+            item.get("symbol")
+            for item in state.get("code_findings", [])
+            if item.get("symbol")
+        )
+        logger.info(
+            "[LLMContext] Sending repository context: files=%s symbols=%s evidence_count=%d",
+            sorted(context_files),
+            sorted(context_symbols),
+            len(state.get("code_evidence", [])),
+        )
 
         repository_context = {
             "repository_path": state.get(
@@ -86,6 +141,10 @@ def build_investigation_graph(
                     "code_change_suggestions",
                     [],
                 )
+            ),
+
+            "repository_investigation": state.get(
+                "repository_investigation"
             ),
         }
 
@@ -337,3 +396,19 @@ def build_investigation_graph(
     )
 
     return graph.compile()
+
+
+def _location_label(location) -> str | None:
+    if location is None:
+        return None
+    return f"{location.file_path}:{location.start_line}:{location.symbol_name}"
+
+
+def _location_files(locations) -> list[str]:
+    return sorted({location.file_path for location in locations})
+
+
+def _as_location_list(value) -> list[dict]:
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]

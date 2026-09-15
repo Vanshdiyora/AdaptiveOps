@@ -85,8 +85,8 @@ def get_investigation_llm(
         "model": settings.maq_model,
         "temperature": settings.maq_temperature,
         "max_tokens": 40000,
-        "timeout": 60,
-        "max_retries": 1,
+        "timeout": 600,
+        "max_retries": 3,
     }
     if usage_tracker is not None:
         llm_kwargs["callbacks"] = [usage_tracker]

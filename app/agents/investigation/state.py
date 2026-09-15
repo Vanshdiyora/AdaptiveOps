@@ -22,6 +22,8 @@ class InvestigationState(TypedDict, total=False):
 
     code_change_suggestions: list[dict[str, Any]]
 
+    repository_investigation: dict[str, Any] | None
+
     investigation_context: dict[str, str]
 
     llm_output: InvestigationLLMOutput

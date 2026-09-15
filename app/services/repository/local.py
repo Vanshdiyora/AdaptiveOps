@@ -99,29 +99,49 @@ class LocalRepositoryProvider:
 
         collected: list[str] = []
         queue: list[tuple[Path, int]] = [(base, 0)]
+        limit = min(max_files, self.max_files)
 
-        while queue and len(collected) < max_files:
+        while queue and len(collected) < limit:
             current, depth = queue.pop(0)
             if max_depth is not None and depth > max_depth:
                 continue
-            for child in sorted(current.iterdir(), key=lambda item: item.name):
-                relative = child.relative_to(self.root)
+
+            try:
+                children = sorted(current.iterdir(), key=lambda item: item.name)
+            except OSError:
+                continue
+
+            for child in children:
+                if len(collected) >= limit:
+                    break
+
+                try:
+                    relative = child.relative_to(self.root)
+                except ValueError:
+                    continue
+
                 if self._is_ignored(relative) or self._is_sensitive(relative):
                     continue
-                if child.is_dir():
-                    queue.append((child, depth + 1))
-                    if depth == 0 or max_depth is None or depth < max_depth:
-                        collected.append(str(relative).replace('\\', '/'))
-                elif child.is_file():
-                    if self._is_binary_file(child):
-                        continue
-                    collected.append(str(relative).replace('\\', '/'))
-                    if len(collected) >= max_files:
-                        break
-            if len(collected) >= max_files:
-                break
 
-        return collected[:max_files]
+                if child.is_dir():
+                    if max_depth is None or depth < max_depth:
+                        queue.append((child, depth + 1))
+                    continue
+
+                if not child.is_file():
+                    continue
+
+                if self._is_binary_file(child):
+                    continue
+
+                try:
+                    child.read_bytes()
+                except OSError:
+                    continue
+
+                collected.append(str(relative).replace('\\', '/'))
+
+        return collected[:limit]
 
     def read_file(
         self,
@@ -149,19 +169,41 @@ class LocalRepositoryProvider:
         with resolved.open("r", encoding="utf-8", errors="strict") as handle:
             lines = handle.readlines()
 
-        requested = lines
-        if start_line is not None or end_line is not None:
-            start_index = max(0, (start_line or 1) - 1)
-            end_index = min(len(lines), end_line or len(lines))
-            requested = lines[start_index:end_index]
+        if not lines:
+            return {
+                "file": str(relative).replace('\\', '/'),
+                "start_line": 1,
+                "end_line": 0,
+                "snippet": "",
+                "line_count": 0,
+            }
 
-        requested = requested[:max_lines]
-        snippet = "".join(requested)
+        requested_start = max(1, start_line or 1)
+        requested_end = len(lines) if end_line is None else min(len(lines), max(1, end_line))
+        start_index = max(0, requested_start - 1)
+        end_index = max(start_index, requested_end)
+        requested = lines[start_index:end_index]
+
+        if max_lines is not None and max_lines > 0:
+            requested = requested[:max_lines]
+
+        if not requested:
+            return {
+                "file": str(relative).replace('\\', '/'),
+                "start_line": requested_start,
+                "end_line": requested_start - 1,
+                "snippet": "",
+                "line_count": len(lines),
+            }
+
+        actual_start = start_index + 1
+        actual_end = min(len(lines), start_index + len(requested))
+        snippet = "".join(requested).rstrip()
         return {
-            "file": str(resolved.relative_to(self.root)).replace('\\', '/'),
-            "start_line": start_line or 1,
-            "end_line": min(len(lines), (start_line or 1) + len(requested) - 1),
-            "snippet": snippet.rstrip(),
+            "file": str(relative).replace('\\', '/'),
+            "start_line": actual_start,
+            "end_line": actual_end,
+            "snippet": snippet,
             "line_count": len(lines),
         }
 
@@ -176,6 +218,8 @@ class LocalRepositoryProvider:
 
         matches: list[dict[str, Any]] = []
         result_limit = min(max_results, self.max_search_results)
+        normalized_query = query.strip()
+
         for path in self.list_files(max_files=self.max_files):
             full_path = self._resolve_relative_path(path)
             if self._is_binary_file(full_path):
@@ -186,22 +230,26 @@ class LocalRepositoryProvider:
             except (OSError, UnicodeError):
                 continue
 
-            normalized_query = query.strip()
             for index, line in enumerate(lines, start=1):
-                if normalized_query.lower() in line.lower():
-                    context_start = max(1, index - context_lines)
-                    context_end = min(len(lines), index + context_lines)
-                    snippet = "".join(lines[context_start - 1:context_end])
-                    matches.append(
-                        {
-                            "file": path,
-                            "line": index,
-                            "match": line.strip(),
-                            "context": snippet.rstrip(),
-                        }
-                    )
-                    if len(matches) >= result_limit:
-                        return matches
+                if normalized_query.lower() not in line.lower():
+                    continue
+
+                context_start = max(1, index - context_lines)
+                context_end = min(len(lines), index + context_lines)
+                snippet = "".join(lines[context_start - 1:context_end])
+                matches.append(
+                    {
+                        "file": path,
+                        "line": index,
+                        "match": line.rstrip("\n\r"),
+                        "context": snippet.rstrip(),
+                        "context_start_line": context_start,
+                        "context_end_line": context_end,
+                    }
+                )
+                if len(matches) >= result_limit:
+                    return matches
+
         return matches[:result_limit]
 
     def find_symbol(

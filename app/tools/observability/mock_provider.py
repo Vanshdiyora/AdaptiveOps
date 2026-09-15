@@ -29,72 +29,83 @@ class MockApplicationInsightsProvider(
 
         return [
             LogEntry(
-                timestamp=now - timedelta(seconds=60),
-                level="INFO",
-                service="frontend",
-                operation="POST /api/workflow/last",
-                message=(
-                    "Workflow run request received from frontend"
-                ),
-            ),
-
-            LogEntry(
                 timestamp=now - timedelta(seconds=50),
                 level="INFO",
                 service="frontend",
-                operation="POST /api/workflow/last",
+                operation="POST /api/workflow/run",
                 message=(
-                    "Request URL: "
-                    "http://localhost:5173/api/workflow/last"
+                    "Workflow run request initiated "
+                    "from frontend"
                 ),
             ),
 
             LogEntry(
                 timestamp=now - timedelta(seconds=40),
-                level="ERROR",
+                level="INFO",
                 service="frontend",
-                operation="POST /api/workflow/last",
+                operation="POST /api/workflow/run",
                 message=(
-                    '127.0.0.1:50810 - '
-                    '"POST /api/workflow/last HTTP/1.1" '
-                    "404 Not Found"
+                    "POST request sent to "
+                    "http://localhost:5173/api/workflow/run"
                 ),
-                exception_type="HTTPNotFound",
             ),
 
             LogEntry(
                 timestamp=now - timedelta(seconds=30),
-                level="ERROR",
-                service="frontend",
-                operation="POST /api/workflow/last",
+                level="INFO",
+                service="backend",
+                operation="POST /api/workflow/run",
                 message=(
-                    "Workflow API endpoint "
-                    "/api/workflow/last returned 404 Not Found"
+                    "Workflow run request received by backend"
                 ),
-                exception_type="HTTPNotFound",
             ),
 
             LogEntry(
                 timestamp=now - timedelta(seconds=20),
                 level="ERROR",
-                service="frontend",
-                operation="POST /api/workflow/last",
+                service="backend",
+                operation="POST /api/workflow/run",
                 message=(
-                    "POST request failed because "
-                    "/api/workflow/last is not registered "
-                    "on the application running at localhost:5173"
+                    "Workflow execution failed because "
+                    "the provided ticker format is invalid"
                 ),
-                exception_type="HTTPNotFound",
+                exception_type="InvalidTickerFormat",
+            ),
+
+            LogEntry(
+                timestamp=now - timedelta(seconds=15),
+                level="ERROR",
+                service="backend",
+                operation="POST /api/workflow/run",
+                message=(
+                    'Request rejected with HTTP 400: '
+                    '"Invalid ticker format."'
+                ),
+                exception_type="HTTPBadRequest",
             ),
 
             LogEntry(
                 timestamp=now - timedelta(seconds=10),
-                level="INFO",
-                service="frontend",
-                operation="POST /api/workflow/last",
+                level="ERROR",
+                service="backend",
+                operation="POST /api/workflow/run",
                 message=(
-                    "Workflow request completed with HTTP status 404"
+                    "Ticker validation failed before "
+                    "workflow execution could start"
                 ),
+                exception_type="InvalidTickerFormat",
+            ),
+
+            LogEntry(
+                timestamp=now - timedelta(seconds=5),
+                level="ERROR",
+                service="frontend",
+                operation="POST /api/workflow/run",
+                message=(
+                    "Workflow run request completed "
+                    "with HTTP status 400"
+                ),
+                exception_type="HTTPBadRequest",
             ),
         ]
 
@@ -109,17 +120,11 @@ class MockApplicationInsightsProvider(
         return MetricSnapshot(
             timestamp=now,
             service=service,
-
             request_count=120,
             error_count=10,
-
             error_rate=8.33,
-
-            # Request reaches the application and gets
-            # an HTTP response, so latency is non-zero.
             latency_p50_ms=18.0,
             latency_p95_ms=42.0,
-
             cpu_percent=12.5,
             memory_percent=34.0,
         )
@@ -135,55 +140,61 @@ class MockApplicationInsightsProvider(
         return [
             TraceEntry(
                 timestamp=now - timedelta(seconds=45),
-                trace_id="trace-workflow-001",
-                span_id="span-frontend-001",
-                service="frontend",
-                operation="POST /api/workflow/last",
+                trace_id="trace-workflow-run-001",
+                span_id="span-workflow-run-001",
+                service="backend",
+                operation="POST /api/workflow/run",
                 duration_ms=16,
                 status="ERROR",
                 attributes={
                     "http_method": "POST",
                     "http_url": (
-                        "http://localhost:5173/api/workflow/last"
+                        "http://localhost:8000/api/workflow/run"
                     ),
-                    "http_status": 404,
-                    "error": "Not Found",
-                    "route": "/api/workflow/last",
+                    "http_status": 400,
+                    "error": "Invalid ticker format.",
+                    "route": "/api/workflow/run",
+                    "ticker": "INVALID",
                 },
             ),
 
             TraceEntry(
                 timestamp=now - timedelta(seconds=30),
-                trace_id="trace-workflow-002",
-                span_id="span-frontend-002",
-                service="frontend",
-                operation="POST /api/workflow/last",
+                trace_id="trace-workflow-run-002",
+                span_id="span-workflow-run-002",
+                service="backend",
+                operation="POST /api/workflow/run",
                 duration_ms=21,
                 status="ERROR",
                 attributes={
                     "http_method": "POST",
-                    "target": "localhost:5173",
-                    "path": "/api/workflow/last",
-                    "status_code": 404,
-                    "error_type": "HTTPNotFound",
+                    "target": "localhost:8000",
+                    "path": "/api/workflow/run",
+                    "status_code": 400,
+                    "error_type": "InvalidTickerFormat",
+                    "error": "Invalid ticker format.",
+                    "ticker": "INVALID",
                 },
             ),
 
             TraceEntry(
                 timestamp=now - timedelta(seconds=15),
-                trace_id="trace-workflow-003",
-                span_id="span-frontend-003",
-                service="frontend",
-                operation="POST /api/workflow/last",
+                trace_id="trace-workflow-run-003",
+                span_id="span-workflow-run-003",
+                service="backend",
+                operation="POST /api/workflow/run",
                 duration_ms=39,
                 status="ERROR",
                 attributes={
                     "http_method": "POST",
-                    "path": "/api/workflow/last",
-                    "response_status": 404,
+                    "path": "/api/workflow/run",
+                    "response_status": 400,
                     "reason": (
-                        "No matching API route was found"
+                        "Ticker validation failed before "
+                        "workflow execution could start"
                     ),
+                    "error": "Invalid ticker format.",
+                    "ticker": "INVALID",
                 },
             ),
         ]
@@ -198,35 +209,48 @@ class MockApplicationInsightsProvider(
 
         return [
             ExceptionEntry(
-                timestamp=now - timedelta(seconds=40),
-                service="frontend",
-                exception_type="HTTPNotFound",
+                timestamp=now - timedelta(seconds=20),
+                service="backend",
+                exception_type="InvalidTickerFormat",
                 message=(
-                    "POST /api/workflow/last returned "
-                    "404 Not Found"
+                    "Workflow execution failed because "
+                    "the provided ticker format is invalid"
                 ),
-                operation="POST /api/workflow/last",
-            ),
-
-            ExceptionEntry(
-                timestamp=now - timedelta(seconds=30),
-                service="frontend",
-                exception_type="HTTPNotFound",
-                message=(
-                    "Workflow API endpoint "
-                    "/api/workflow/last was not found "
-                    "on localhost:5173"
-                ),
-                operation="POST /api/workflow/last",
+                operation="POST /api/workflow/run",
+                trace_id="trace-workflow-run-001",
             ),
 
             ExceptionEntry(
                 timestamp=now - timedelta(seconds=15),
-                service="frontend",
-                exception_type="HTTPNotFound",
+                service="backend",
+                exception_type="HTTPBadRequest",
                 message=(
-                    "No route matched POST /api/workflow/last"
+                    'POST /api/workflow/run returned '
+                    '400 Bad Request: '
+                    '"Invalid ticker format."'
                 ),
-                operation="POST /api/workflow/last",
+                operation="POST /api/workflow/run",
+            ),
+
+            ExceptionEntry(
+                timestamp=now - timedelta(seconds=10),
+                service="backend",
+                exception_type="InvalidTickerFormat",
+                message=(
+                    "Ticker validation failed before "
+                    "workflow execution could start"
+                ),
+                operation="POST /api/workflow/run",
+            ),
+
+            ExceptionEntry(
+                timestamp=now - timedelta(seconds=5),
+                service="frontend",
+                exception_type="HTTPBadRequest",
+                message=(
+                    "Frontend received HTTP 400 from "
+                    "/api/workflow/run"
+                ),
+                operation="POST /api/workflow/run",
             ),
         ]

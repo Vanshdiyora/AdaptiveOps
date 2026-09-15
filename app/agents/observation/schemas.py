@@ -48,6 +48,12 @@ class ExceptionEntry(BaseModel):
     exception_type: str
     message: str
     operation: str | None = None
+    file_path: str | None = None
+    function_name: str | None = None
+    line_number: int | None = None
+    column_number: int | None = None
+    stack_trace: str | None = None
+    trace_id: str | None = None
 
 
 class ObservationSnapshot(BaseModel):
